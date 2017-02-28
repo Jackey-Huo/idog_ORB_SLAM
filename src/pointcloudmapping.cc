@@ -25,6 +25,7 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/common/projection_matrix.h>
 #include "Converter.h"
+#include "MapPoint.h"
 
 #include <boost/make_shared.hpp>
 
