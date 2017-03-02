@@ -26,6 +26,12 @@
 #include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
 #include <condition_variable>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+
+#include "arrGrid.h"
 
 using namespace ORB_SLAM2;
 
@@ -35,7 +41,8 @@ public:
     typedef pcl::PointXYZRGBA PointT;
     typedef pcl::PointCloud<PointT> PointCloud;
 
-    PointCloudMapping( double resolution_ );
+    PointCloudMapping(double resolution_, vector<int8_t> & vDataGrid, int xCells=1000, int yCells=1000,
+            double x_bias=1000.0, double y_bias=1000.0, double cell_resolution=0.02);
 
     // 插入一个keyframe，会更新一次地图
     void insertKeyFrame( KeyFrame* kf, cv::Mat& color, cv::Mat& depth );
@@ -45,11 +52,19 @@ public:
     // sava the current point cloud
     void saveCurrentPointCloud();
 
+    arrGrid getArrGrid()
+    { return mArrGrid; }
+
+    bool newGrid();
+
 protected:
     PointCloud::Ptr generatePointCloud(KeyFrame* kf, cv::Mat& color, cv::Mat& depth);
 
     PointCloud::Ptr globalMap;
     shared_ptr<thread>  viewerThread;
+
+    // find ground pos and update the mCoefficients param
+    void segmentGround();
 
     bool    shutDownFlag    =false;
     mutex   shutDownMutex;
@@ -65,7 +80,12 @@ protected:
     uint16_t                lastKeyframeSize =0;
 
     double resolution = 0.04;
-    pcl::VoxelGrid<PointT>  voxel;
+    pcl::VoxelGrid<PointT>       voxel;
+    pcl::ModelCoefficients::Ptr  mpCoefficients;
+    bool                         bCoefficientDown;
+
+    arrGrid                      mArrGrid;
+    bool                         bNewGrid;
 };
 
 #endif // POINTCLOUDMAPPING_H

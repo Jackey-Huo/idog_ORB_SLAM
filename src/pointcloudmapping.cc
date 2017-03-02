@@ -23,18 +23,25 @@
 #include <pcl/point_types.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/cloud_viewer.h>
+#include <pcl/filters/model_outlier_removal.h>
 #include <pcl/common/projection_matrix.h>
 #include "Converter.h"
 #include "MapPoint.h"
 
 #include <boost/make_shared.hpp>
 
-PointCloudMapping::PointCloudMapping(double resolution_)
+PointCloudMapping::PointCloudMapping(double resolution_, vector<int8_t> & vDataGrid,
+        int xCells, int yCells, double x_bias, double y_bias, double cell_resolution):
+    mArrGrid(xCells, yCells, x_bias, y_bias, cell_resolution, vDataGrid)
 {
     this->resolution = resolution_;
     voxel.setLeafSize( resolution, resolution, resolution);
-    globalMap = boost::make_shared< PointCloud >( );
 
+    mpCoefficients = boost::make_shared<pcl::ModelCoefficients>(  );
+    globalMap = boost::make_shared< PointCloud >( );
+    bNewGrid = false;
+
+    bCoefficientDown = false;
     viewerThread = make_shared<thread>( bind(&PointCloudMapping::viewer, this ) );
 }
 
@@ -88,10 +95,74 @@ pcl::PointCloud< PointCloudMapping::PointT >::Ptr PointCloudMapping::generatePoi
     pcl::transformPointCloud( *tmp, *cloud, T.inverse().matrix());
     cloud->is_dense = false;
 
+    if(bCoefficientDown)
+    {
+        PointCloud::Ptr tmp_ground_cloud( new PointCloud );
+
+        // filter ground
+        pcl::ModelOutlierRemoval<PointT> ground_filter;
+        ground_filter.setModelCoefficients (*mpCoefficients);
+        ground_filter.setThreshold (0.05);
+        ground_filter.setModelType (pcl::SACMODEL_PLANE);
+        ground_filter.setInputCloud (cloud);
+        ground_filter.filter (*tmp_ground_cloud);
+
+        Eigen::Vector3d normal(mpCoefficients->values[0], mpCoefficients->values[1], mpCoefficients->values[2]);
+
+        Eigen::Matrix3d R = Eigen::Quaterniond::FromTwoVectors( normal, Eigen::Vector3d::UnitZ() ).toRotationMatrix();
+
+        for(const auto &i : tmp_ground_cloud->points)
+        {
+            Eigen::Vector3d pos(i.x, i.y, i.z);
+            Eigen::Vector3d res = R*pos;
+            int x = ( res[0] + mArrGrid.x_bias ) / mArrGrid.mCellResolution, y = ( res[1] + mArrGrid.y_bias ) / mArrGrid.mCellResolution;
+            if( !(0<=x && x<mArrGrid.xCells && 0<=y && y<mArrGrid.yCells) )
+                {
+                std::cerr << "\n" << "\033[1;31m"
+                    << "At PointCloudMapping.generatePointCloud: invalid x, y value: x = "
+                    << x << ", y = " << y << "\n"
+                    << "bias x,y may need to be adjusted"
+                    << "\033[0m" << std::endl;
+
+                exit(-1);
+            }
+            //std::cout << "At PointCloudMapping.generatePointCloud: x, y value: x = "
+                //<< x << ", y = " << y << ", z = " << res[2] << std::endl;
+
+            mArrGrid.GridDataVector[y*mArrGrid.xCells + x] = 100;
+        }
+
+        bNewGrid = true;
+
+    }
+
     cout<<"generate point cloud for kf "<<kf->mnId<<", size="<<cloud->points.size()<<endl;
     return cloud;
 }
 
+// find ground pos and update the mpCoefficients param
+void PointCloudMapping::segmentGround()
+{
+    if(!mpCoefficients->values.empty())
+    {
+        mpCoefficients->values.clear();
+    }
+
+    pcl::PointIndices::Ptr groud_inliers (new pcl::PointIndices);
+    // Create the segmentation object
+    pcl::SACSegmentation<PointT> seg;
+    // Optional
+    seg.setOptimizeCoefficients (true);
+    // Mandatory
+    seg.setModelType (pcl::SACMODEL_PLANE);
+    seg.setMethodType (pcl::SAC_RANSAC);
+    seg.setDistanceThreshold (0.05);
+
+    seg.setInputCloud (globalMap);
+    seg.segment (*groud_inliers, *mpCoefficients);
+
+    bCoefficientDown = true;
+}
 
 void PointCloudMapping::viewer()
 {
@@ -117,8 +188,14 @@ void PointCloudMapping::viewer()
             N = keyframes.size();
         }
 
+        static int count = 0;
         for ( size_t i=lastKeyframeSize; i<N ; i++ )
         {
+            count++;
+            if(count == 7)
+            {
+                segmentGround();
+            }
             PointCloud::Ptr p = generatePointCloud( keyframes[i], colorImgs[i], depthImgs[i] );
             *globalMap += *p;
         }
@@ -140,4 +217,11 @@ void PointCloudMapping::saveCurrentPointCloud()
     std::cerr << "Saved " << globalMap->size() << " data points to current_pcd.pcd." << std::endl;
 
     return;
+}
+
+bool PointCloudMapping::newGrid()
+{
+    bool res = bNewGrid;
+    bNewGrid = false;
+    return res;
 }

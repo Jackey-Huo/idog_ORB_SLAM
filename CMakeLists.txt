@@ -41,7 +41,7 @@ endif()
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 # adding for point cloud viewer and mapper
-find_package( PCL 1.7 REQUIRED )
+find_package( PCL 1.7.2 EXACT REQUIRED )
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
@@ -92,33 +92,13 @@ ${PCL_LIBRARIES}
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
-add_executable(rgbd_tum 
-    Examples/RGB-D/rgbd_tum.cc)
-target_link_libraries(rgbd_tum ${PROJECT_NAME})
+#add_executable(rgbd_tum 
+    #Examples/RGB-D/rgbd_tum.cc)
+#target_link_libraries(rgbd_tum ${PROJECT_NAME})
 
-add_executable(rgbd_my
-    Examples/RGB-D/rgbd_my.cc)
-target_link_libraries(rgbd_my ${PROJECT_NAME})
-
-add_executable(stereo_kitti
-Examples/Stereo/stereo_kitti.cc)
-target_link_libraries(stereo_kitti ${PROJECT_NAME})
-
-add_executable(stereo_euroc
-Examples/Stereo/stereo_euroc.cc)
-target_link_libraries(stereo_euroc ${PROJECT_NAME})
-
-add_executable(mono_tum
-Examples/Monocular/mono_tum.cc)
-target_link_libraries(mono_tum ${PROJECT_NAME})
-
-add_executable(mono_kitti
-Examples/Monocular/mono_kitti.cc)
-target_link_libraries(mono_kitti ${PROJECT_NAME})
-
-add_executable(mono_euroc
-Examples/Monocular/mono_euroc.cc)
-target_link_libraries(mono_euroc ${PROJECT_NAME})
+#add_executable(rgbd_my
+    #Examples/RGB-D/rgbd_my.cc)
+#target_link_libraries(rgbd_my ${PROJECT_NAME})
 
 
 # Build tools

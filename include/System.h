@@ -38,6 +38,8 @@
 
 // for point cloud viewing
 #include "pointcloudmapping.h"
+#include "arrGrid.h"
+
 
 class PointCloudMapping;
 
@@ -65,6 +67,10 @@ public:
 
     // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
     System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer = true);
+
+    // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
+    // this version only for idog ros ORB system
+    System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, vector<int8_t> & vOccuGrid, const bool bUseViewer = true);
 
     // Proccess the given stereo frame. Images must be synchronized and rectified.
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
@@ -127,6 +133,9 @@ public:
     std::vector<MapPoint*> GetTrackedMapPoints();
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
+    bool newGrid();
+    arrGrid getNav_array();
+
 private:
 
     // Input sensor
@@ -181,7 +190,7 @@ private:
     std::mutex mMutexState;
 
     // point cloud mapping
-    shared_ptr<PointCloudMapping> mpPointCloudMapping;
+    shared_ptr<PointCloudMapping>  mpPointCloudMapping;
 };
 
 }// namespace ORB_SLAM

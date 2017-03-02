@@ -37,7 +37,7 @@ namespace ORB_SLAM2
 {
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-               const bool bUseViewer):
+        vector<int8_t> & vOccuGrid, const bool bUseViewer):
     mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
         mbDeactivateLocalizationMode(false)
 {
@@ -65,8 +65,6 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
        exit(-1);
     }
 
-    // for point cloud resolution
-    float resolution = fsSettings["PointCloudMapping.Resolution"];
 
     //Load ORB Vocabulary
     cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
@@ -86,7 +84,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     }
     printf("Vocabulary loaded in %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 
-    //Create KeyFrame Database
+    //Create KeyFrame Databasek
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
 
     //Create the Map
@@ -96,8 +94,17 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpFrameDrawer = new FrameDrawer(mpMap);
     mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
 
+    // for point cloud parameter init
+    float    resolution = fsSettings["PointCloudMapping.Resolution"];
+    int      GridXCells = fsSettings["OccupiedGrid.xCells"];
+    int      GridYCells = fsSettings["OccupiedGrid.yCells"];
+    double   GridXbias  = fsSettings["OccupiedGrid.x_bias"];
+    double   GridYbias  = fsSettings["OccupiedGrid.y_bias"];
+    double   GridcellReso = fsSettings["OccupiedGrid.cell_resolution"];
+
+
     // Initialize pointcloud mapping
-    mpPointCloudMapping = make_shared<PointCloudMapping>( resolution );
+    mpPointCloudMapping = make_shared<PointCloudMapping>( resolution, vOccuGrid, GridXCells, GridYCells, GridXbias, GridYbias, GridcellReso );
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
@@ -129,7 +136,112 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     mpLoopCloser->SetTracker(mpTracker);
     mpLoopCloser->SetLocalMapper(mpLocalMapper);
+
 }
+
+
+
+//System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
+               //const bool bUseViewer):
+    //mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
+        //mbDeactivateLocalizationMode(false)
+//{
+    //// Output welcome message
+    //cout << endl <<
+    //"ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of Zaragoza." << endl <<
+    //"This program comes with ABSOLUTELY NO WARRANTY;" << endl  <<
+    //"This is free software, and you are welcome to redistribute it" << endl <<
+    //"under certain conditions. See LICENSE.txt." << endl << endl;
+
+    //cout << "Input sensor was set to: ";
+
+    //if(mSensor==MONOCULAR)
+        //cout << "Monocular" << endl;
+    //else if(mSensor==STEREO)
+        //cout << "Stereo" << endl;
+    //else if(mSensor==RGBD)
+        //cout << "RGB-D" << endl;
+
+    ////Check settings file
+    //cv::FileStorage fsSettings(strSettingsFile.c_str(), cv::FileStorage::READ);
+    //if(!fsSettings.isOpened())
+    //{
+       //cerr << "Failed to open settings file at: " << strSettingsFile << endl;
+       //exit(-1);
+    //}
+
+
+    ////Load ORB Vocabulary
+    //cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
+
+    //clock_t tStart = clock();
+    //mpVocabulary = new ORBVocabulary();
+    //bool bVocLoad = false; // chose loading method based on file extension
+    //if (has_suffix(strVocFile, ".txt"))
+	  //bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+	//else
+	  //bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
+    //if(!bVocLoad)
+    //{
+        //cerr << "Wrong path to vocabulary. " << endl;
+        //cerr << "Failed to open at: " << strVocFile << endl;
+        //exit(-1);
+    //}
+    //printf("Vocabulary loaded in %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
+
+    ////Create KeyFrame Databasek
+    //mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
+
+    ////Create the Map
+    //mpMap = new Map();
+
+    ////Create Drawers. These are used by the Viewer
+    //mpFrameDrawer = new FrameDrawer(mpMap);
+    //mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
+
+    //// for point cloud parameter init
+    //float    resolution = fsSettings["PointCloudMapping.Resolution"];
+    //int      GridXCells = fsSettings["OccupiedGrid.xCells"];
+    //int      GridYCells = fsSettings["OccupiedGrid.yCells"];
+    //double   GridXbias  = fsSettings["OccupiedGrid.x_bias"];
+    //double   GridYbias  = fsSettings["OccupiedGrid.y_bias"];
+    //double   GridcellReso = fsSettings["OccupiedGrid.cell_resolution"];
+
+
+    //// Initialize pointcloud mapping
+    //mpPointCloudMapping = make_shared<PointCloudMapping>( resolution, GridXCells, GridYCells, GridXbias, GridYbias, GridcellReso );
+
+    ////Initialize the Tracking thread
+    ////(it will live in the main thread of execution, the one that called this constructor)
+    //mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
+                             //mpMap, mpPointCloudMapping, mpKeyFrameDatabase, strSettingsFile, mSensor);
+
+    ////Initialize the Local Mapping thread and launch
+    //mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
+    //mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
+
+    ////Initialize the Loop Closing thread and launch
+    //mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR);
+    //mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
+
+    ////Initialize the Viewer thread and launch
+    //if(bUseViewer)
+    //{
+        //mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile);
+        //mptViewer = new thread(&Viewer::Run, mpViewer);
+        //mpTracker->SetViewer(mpViewer);
+    //}
+
+    ////Set pointers between threads
+    //mpTracker->SetLocalMapper(mpLocalMapper);
+    //mpTracker->SetLoopClosing(mpLoopCloser);
+
+    //mpLocalMapper->SetTracker(mpTracker);
+    //mpLocalMapper->SetLoopCloser(mpLoopCloser);
+
+    //mpLoopCloser->SetTracker(mpTracker);
+    //mpLoopCloser->SetLocalMapper(mpLocalMapper);
+//}
 
 cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp)
 {
@@ -513,5 +625,16 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
     unique_lock<mutex> lock(mMutexState);
     return mTrackedKeyPointsUn;
 }
+
+bool System::newGrid()
+{
+    return mpPointCloudMapping->newGrid();
+}
+
+arrGrid System::getNav_array()
+{
+    return mpPointCloudMapping->getArrGrid();
+}
+
 
 } //namespace ORB_SLAM

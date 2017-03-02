@@ -1,5 +1,5 @@
 <package>
-  <description brief="ORB_SLAM2">
+  <description brief="idog ORB_SLAM2">
 
      ORB_SLAM2
 
@@ -7,6 +7,7 @@
   <author>Raul Mur-Artal</author>
   <license>GPLv3</license>
   <depend package="roscpp"/>
+  <depend package="pcl_ros"/>
   <depend package="tf"/>
   <depend package="sensor_msgs"/>
   <depend package="image_transport"/>
