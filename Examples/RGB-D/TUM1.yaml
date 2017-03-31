@@ -60,7 +60,7 @@ ORBextractor.minThFAST: 7
 Viewer.KeyFrameSize: 0.05
 Viewer.KeyFrameLineWidth: 1
 Viewer.GraphLineWidth: 0.9
-Viewer.PointSize:2
+Viewer.PointSize: 2
 Viewer.CameraSize: 0.08
 Viewer.CameraLineWidth: 3
 Viewer.ViewpointX: 0
@@ -68,9 +68,9 @@ Viewer.ViewpointY: -0.7
 Viewer.ViewpointZ: -1.8
 Viewer.ViewpointF: 500
 
-PointCloudMapping.Resolution: 0.005
-OccupiedGrid.xCells: 400
-OccupiedGrid.yCells: 400
-OccupiedGrid.x_bias: 2.5
-OccupiedGrid.y_bias: 2.5
-OccupiedGrid.cell_resolution: 0.02
+PointCloudMapping.Resolution: 0.01
+OccupiedGrid.xCells: 500
+OccupiedGrid.yCells: 500
+OccupiedGrid.x_bias: 5.0
+OccupiedGrid.y_bias: 5.0
+OccupiedGrid.cell_resolution: 0.03

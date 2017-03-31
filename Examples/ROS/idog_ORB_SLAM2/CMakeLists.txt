@@ -61,21 +61,21 @@ ${PROJECT_SOURCE_DIR}/../../../lib/libORB_SLAM2.so
 )
 
 
- #Node for RGB-D camera
-#rosbuild_add_executable(RGBD
-#src/ros_rgbd.cc
-#)
-
-#target_link_libraries(RGBD
-#${LIBS}
-#)
-
-# Node for RGB-D camera
-rosbuild_add_executable(RGBD_TUM
-src/ros_rgbd_tum.cc
+#Node for RGB-D camera
+rosbuild_add_executable(RGBD
+src/ros_rgbd.cc
 )
 
-target_link_libraries(RGBD_TUM
+target_link_libraries(RGBD
 ${LIBS}
 )
+
+# Node for RGB-D camera
+#rosbuild_add_executable(RGBD_TUM
+#src/ros_rgbd_tum.cc
+#)
+
+#target_link_libraries(RGBD_TUM
+#${LIBS}
+#)
 

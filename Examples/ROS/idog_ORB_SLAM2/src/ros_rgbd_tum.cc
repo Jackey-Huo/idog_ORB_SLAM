@@ -162,6 +162,8 @@ int main(int argc, char **argv)
 
     }
 
+    std::cin.ignore().get();
+
     // Stop all threads
     SLAM.Shutdown();
 
