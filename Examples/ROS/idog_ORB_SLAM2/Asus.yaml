@@ -67,3 +67,10 @@ Viewer.ViewpointY: -0.7
 Viewer.ViewpointZ: -1.8
 Viewer.ViewpointF: 500
 
+PointCloudMapping.Resolution: 0.01
+OccupiedGrid.xCells: 500
+OccupiedGrid.yCells: 500
+OccupiedGrid.x_bias: 5.0
+OccupiedGrid.y_bias: 5.0
+OccupiedGrid.cell_resolution: 0.03
+

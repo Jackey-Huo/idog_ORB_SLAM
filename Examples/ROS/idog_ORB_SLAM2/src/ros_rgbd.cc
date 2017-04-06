@@ -30,11 +30,20 @@
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
+#include <nav_msgs/OccupancyGrid.h>
+
 #include<opencv2/core/core.hpp>
 
-#include"../../../include/System.h"
+#include"System.h"
+
+#include "arrGrid.h"
 
 using namespace std;
+
+void initGrid(nav_msgs::OccupancyGridPtr pOccuGrid, const string strSettingsFile);
+
+void updateGrid(nav_msgs::OccupancyGridPtr pOccuGrid, arrGrid ArrGrid);
+
 
 class ImageGrabber
 {
@@ -53,13 +62,19 @@ int main(int argc, char **argv)
 
     if(argc != 3)
     {
-        cerr << endl << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings" << endl;        
+        cerr << endl << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings" << endl;
         ros::shutdown();
         return 1;
-    }    
+    }
+
+    // construct navigation vector, used by ORB_SLAM system
+    nav_msgs::OccupancyGridPtr pOccuGrid( new nav_msgs::OccupancyGrid );
+    initGrid(pOccuGrid, argv[2]);
+
+
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true);
+    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD, pOccuGrid->data, true);
 
     ImageGrabber igb(&SLAM);
 
@@ -71,7 +86,24 @@ int main(int argc, char **argv)
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub);
     sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2));
 
-    ros::spin();
+    ros::Publisher pub = nh.advertise<const nav_msgs::OccupancyGrid>("grid", 1);
+
+    //ros::spin();
+    while(true)
+    {
+        if(ros::ok())
+        {
+            ros::spinOnce();
+
+            if(SLAM.newGrid())
+            {
+                arrGrid arrayGrid = SLAM.getNav_array();
+                updateGrid(pOccuGrid, arrayGrid);
+                pub.publish(pOccuGrid);
+                std::cout << "publish new grid!" << std::endl;
+            }
+        }
+    }
 
     // Stop all threads
     SLAM.Shutdown();
@@ -113,3 +145,43 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 }
 
 
+void initGrid(nav_msgs::OccupancyGridPtr pOccuGrid, const string strSettingsFile)
+{
+    //Check settings file
+    cv::FileStorage fsSettings(strSettingsFile.c_str(), cv::FileStorage::READ);
+    if(!fsSettings.isOpened())
+    {
+       cerr << "Failed to open settings file at: " << strSettingsFile << endl;
+       exit(-1);
+    }
+    pOccuGrid->header.seq = 1;
+    pOccuGrid->header.frame_id = "map";
+    pOccuGrid->info.origin.position.z = 0;
+    pOccuGrid->info.origin.orientation.w = 1;
+    pOccuGrid->info.origin.orientation.x = 0;
+    pOccuGrid->info.origin.orientation.y = 0;
+    pOccuGrid->info.origin.orientation.z = 0;
+
+    int xCells, yCells;
+    xCells = fsSettings["OccupiedGrid.xCells"];
+    yCells = fsSettings["OccupiedGrid.yCells"];
+
+    pOccuGrid->data.resize( xCells * yCells );
+    std::fill_n(pOccuGrid->data.begin(), pOccuGrid->data.size(), -1);
+
+    return;
+}
+
+
+void updateGrid(nav_msgs::OccupancyGridPtr pOccuGrid, arrGrid ArrGrid)
+{
+    pOccuGrid->header.seq++;
+    pOccuGrid->header.stamp.sec = ros::Time::now().sec;
+    pOccuGrid->header.stamp.nsec = ros::Time::now().nsec;
+    pOccuGrid->info.map_load_time = ros::Time::now();
+    pOccuGrid->info.resolution = ArrGrid.mCellResolution;
+    pOccuGrid->info.width = ArrGrid.xCells;
+    pOccuGrid->info.height = ArrGrid.yCells;
+    pOccuGrid->info.origin.position.x = 0;
+    pOccuGrid->info.origin.position.y = 0;
+}

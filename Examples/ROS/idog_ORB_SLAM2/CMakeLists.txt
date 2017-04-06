@@ -70,12 +70,12 @@ target_link_libraries(RGBD
 ${LIBS}
 )
 
-# Node for RGB-D camera
-#rosbuild_add_executable(RGBD_TUM
-#src/ros_rgbd_tum.cc
-#)
+# Node for RGB-D camera TUM dataset
+rosbuild_add_executable(RGBD_TUM
+src/ros_rgbd_tum.cc
+)
 
-#target_link_libraries(RGBD_TUM
-#${LIBS}
-#)
+target_link_libraries(RGBD_TUM
+${LIBS}
+)
 
