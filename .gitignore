@@ -1,5 +1,35 @@
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+
+# Unignore all Makefile
+!Makefile
+
+# Unignore all dirs
+!*/
+
+### Above combination will ignore all files without extension ###
+
+# Ignore `bin` dir
+bin/
+# or
+*/bin/*
+
+# Ignore `build` dir
+build/
+# or
+*/build/*
+
+# Ignore compile file, debug file, zip file and gprof output
+*.out
+*.o
+*.zip
+
 CMakeLists.txt.user
 KeyFrameTrajectory.txt
+CameraTrajectory.txt
 Thirdparty/DBoW2/build/
 Thirdparty/DBoW2/lib/
 Thirdparty/g2o/build/
